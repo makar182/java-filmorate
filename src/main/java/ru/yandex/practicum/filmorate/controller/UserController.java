@@ -21,7 +21,7 @@ public class UserController {
         if (!isUserInfoValid(user)) {
             log.debug("Валидация при сохранении пользователя не пройдена!");
             throw new ValidationException("Информация о пользователе не проходит условия валидации. " +
-                    "Пользователь не добавлен!");
+                    "Пользователь не добавлен!!");
         }
         validateUserName(user);
         user.setId(++id);
