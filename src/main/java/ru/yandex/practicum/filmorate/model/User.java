@@ -12,7 +12,7 @@ import java.util.Objects;
 @AllArgsConstructor
 public class User {
     @NotNull
-    private int id;
+    private long id;
     @Email
     private String email;
     @NotNull

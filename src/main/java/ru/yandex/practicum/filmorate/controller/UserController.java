@@ -13,7 +13,7 @@ import java.util.*;
 @RequestMapping("/users")
 @Slf4j
 public class UserController {
-    private final Set<User> users = new HashSet<>();
+    private final Map<Long, User> users = new HashMap<>();
     private int id = 0;
 
     @PostMapping
@@ -25,7 +25,7 @@ public class UserController {
         }
         validateUserName(user);
         user.setId(++id);
-        users.add(user);
+        users.put(user.getId(), user);
         log.debug("Добавлен новый пользователь: " + user);
 
         return user;
@@ -37,21 +37,20 @@ public class UserController {
             log.debug("Валидация при обновлении пользователя не пройдена!");
             throw new ValidationException("Информация о пользователе не проходит условия валидации. " +
                     "Пользователь не добавлен!");
-        } else if (!users.contains(user)) {
+        } else if (!users.containsKey(user.getId())) {
             log.debug("Попытка обновления несуществующего пользователя!");
             throw new ValidationException("Попытка обновления несуществующего пользователя!");
         }
         validateUserName(user);
-        users.remove(user);
-        users.add(user);
+        users.put(user.getId(), user);
         log.debug("Обновлен пользователь: " + user);
 
         return user;
     }
 
     @GetMapping
-    public Set<User> getUsers() {
-        return users;
+    public List<User> getUsers() {
+        return new ArrayList<>(users.values());
     }
 
     private boolean isUserInfoValid(User user) {

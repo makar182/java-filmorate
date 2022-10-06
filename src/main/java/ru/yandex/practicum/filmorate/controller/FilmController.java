@@ -7,14 +7,13 @@ import ru.yandex.practicum.filmorate.model.Film;
 
 import javax.validation.Valid;
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 @RestController
 @RequestMapping("/films")
 @Slf4j
 public class FilmController {
-    private final Set<Film> films = new HashSet<>();
+    private final Map<Long, Film> films = new HashMap<>();
     private int id = 0;
 
     @PostMapping
@@ -24,7 +23,7 @@ public class FilmController {
             throw new ValidationException("Информация о фильме не проходит условия валидации. Фильм не добавлен!");
         }
         film.setId(++id);
-        films.add(film);
+        films.put(film.getId(), film);
         log.debug("Добавлен новый фильм: " + film);
         return film;
     }
@@ -34,19 +33,18 @@ public class FilmController {
         if (!isFilmInfoValid(film)) {
             log.debug("Валидация при обновлении фильма не пройдена!");
             throw new ValidationException("Информация о фильме не проходит условия валидации. Фильм не добавлен!");
-        } else if (!films.contains(film)) {
+        } else if (!films.containsKey(film.getId())) {
             log.debug("Попытка обновления несуществующего фильма!");
             throw new ValidationException("Попытка обновления несуществующего фильма!");
         }
-        films.remove(film);
-        films.add(film);
+        films.put(film.getId(), film);
         log.debug("Обновлен фильм: " + film);
         return film;
     }
 
     @GetMapping
-    public Set<Film> getFilms() {
-        return films;
+    public List<Film> getFilms() {
+        return new ArrayList<>(films.values());
     }
 
     private boolean isFilmInfoValid(Film film) {
