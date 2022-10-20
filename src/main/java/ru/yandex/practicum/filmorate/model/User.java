@@ -27,38 +27,6 @@ public class User {
         friends.add(friendId);
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public String getLogin() {
-        return login;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public LocalDate getBirthday() {
-        return birthday;
-    }
-
-    public Set<Long> getFriends() {
-        return friends;
-    }
-
     public void deleteFriend(Long friendId) {
         friends.remove(friendId);
     }
