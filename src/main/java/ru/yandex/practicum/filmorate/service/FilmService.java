@@ -5,8 +5,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exceptions.ObjectNotExistException;
 import ru.yandex.practicum.filmorate.exceptions.ValidationException;
+import ru.yandex.practicum.filmorate.interfaces.FilmStorage;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.storage.InMemoryFilmStorage;
 
 import java.time.LocalDate;
 import java.util.Comparator;
@@ -16,11 +16,11 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class FilmService {
-    private final InMemoryFilmStorage inMemoryFilmStorage;
+    private final FilmStorage filmStorage;
 
     @Autowired
-    public FilmService(InMemoryFilmStorage inMemoryFilmStorage) {
-        this.inMemoryFilmStorage = inMemoryFilmStorage;
+    public FilmService(FilmStorage filmStorage) {
+        this.filmStorage = filmStorage;
     }
 
     public Film addFilm(Film film) {
@@ -28,7 +28,7 @@ public class FilmService {
             log.debug("Валидация при сохранении фильма не пройдена!");
             throw new ValidationException("Информация о фильме не проходит условия валидации. Фильм не добавлен!");
         }
-        return inMemoryFilmStorage.addFilm(film);
+        return filmStorage.addFilm(film);
     }
 
     public Film updateFilm(Film film) {
@@ -39,15 +39,15 @@ public class FilmService {
             log.debug("Попытка обновления несуществующего фильма!");
             throw new ObjectNotExistException("Попытка обновления несуществующего фильма!");
         }
-        return inMemoryFilmStorage.updateFilm(film);
+        return filmStorage.updateFilm(film);
     }
 
     public List<Film> getFilms() {
-        return inMemoryFilmStorage.getFilms();
+        return filmStorage.getFilms();
     }
 
     public Film getFilmById(Long filmId) {
-        Film film = inMemoryFilmStorage.getFilmById(filmId);
+        Film film = filmStorage.getFilmById(filmId);
         if (film == null) {
             throw new ObjectNotExistException(String.format("Фильм №%d не найден!", filmId));
         }
@@ -55,15 +55,15 @@ public class FilmService {
     }
 
     public void addLike(Long userId, Long filmId) {
-        inMemoryFilmStorage.addLike(userId, filmId);
+        filmStorage.addLike(userId, filmId);
     }
 
     public void deleteLike(Long userId, Long filmId) {
-        inMemoryFilmStorage.deleteLike(userId, filmId);
+        filmStorage.deleteLike(userId, filmId);
     }
 
     public List<Film> getTopFilms(int count) {
-        List<Film> films = inMemoryFilmStorage.getFilms();
+        List<Film> films = filmStorage.getFilms();
         return films.stream().sorted(Comparator.comparingInt(f -> f.getUsersLiked().size()))
                 .sorted(Comparator.comparingInt(f -> f.getUsersLiked().size() * -1))
                 .limit(count)
