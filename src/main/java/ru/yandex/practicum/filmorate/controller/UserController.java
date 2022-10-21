@@ -1,66 +1,60 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.UserService;
 
 import javax.validation.Valid;
-import java.time.LocalDate;
 import java.util.*;
 
 @RestController
 @RequestMapping("/users")
-@Slf4j
 public class UserController {
-    private final Map<Long, User> users = new HashMap<>();
-    private int id = 0;
+    private final UserService userService;
+
+    @Autowired
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
 
     @PostMapping
     public User addUser(@Valid @RequestBody User user) {
-        if (!isUserInfoValid(user)) {
-            log.debug("Валидация при сохранении пользователя не пройдена!");
-            throw new ValidationException("Информация о пользователе не проходит условия валидации. " +
-                    "Пользователь не добавлен!!");
-        }
-        validateUserName(user);
-        user.setId(++id);
-        users.put(user.getId(), user);
-        log.debug("Добавлен новый пользователь: " + user);
-
-        return user;
+        return userService.addUser(user);
     }
 
     @PutMapping
     public User updateUser(@Valid @RequestBody User user) {
-        if (!isUserInfoValid(user)) {
-            log.debug("Валидация при обновлении пользователя не пройдена!");
-            throw new ValidationException("Информация о пользователе не проходит условия валидации. " +
-                    "Пользователь не добавлен!");
-        } else if (!users.containsKey(user.getId())) {
-            log.debug("Попытка обновления несуществующего пользователя!");
-            throw new ValidationException("Попытка обновления несуществующего пользователя!");
-        }
-        validateUserName(user);
-        users.put(user.getId(), user);
-        log.debug("Обновлен пользователь: " + user);
+        return userService.updateUser(user);
+    }
 
-        return user;
+    @PutMapping("/{id}/friends/{friendId}")
+    public void addToFriends(@PathVariable("id") Long userId, @PathVariable("friendId") Long friendId) {
+        userService.addToFriends(userId, friendId);
+    }
+
+    @DeleteMapping("/{id}/friends/{friendId}")
+    public void deleteFromFriends(@PathVariable("id") Long userId, @PathVariable("friendId") Long friendId) {
+        userService.deleteFromFriends(userId, friendId);
     }
 
     @GetMapping
     public List<User> getUsers() {
-        return new ArrayList<>(users.values());
+        return userService.getUsers();
     }
 
-    private boolean isUserInfoValid(User user) {
-        return user.getEmail().contains("@")
-                && user.getBirthday().isBefore(LocalDate.now());
+    @GetMapping("/{id}/friends")
+    public List<User> getFriendsByUserId(@PathVariable("id") Long userId) {
+        return userService.getFriendsByUserId(userId);
     }
 
-    private void validateUserName(User user) {
-        if (user.getName() == null || user.getName().trim().isEmpty()) {
-            user.setName(user.getLogin());
-        }
+    @GetMapping("/{userId}")
+    public User getUserById(@PathVariable Long userId) {
+        return userService.getUserById(userId);
+    }
+
+    @GetMapping("/{id}/friends/common/{otherId}")
+    public List<User> getCommonFriendsByUserId(@PathVariable("id") Long userId, @PathVariable("otherId") Long otherUserId) {
+        return userService.getFriendsInCommon(userId, otherUserId);
     }
 }

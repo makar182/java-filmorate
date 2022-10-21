@@ -1,18 +1,18 @@
 package ru.yandex.practicum.filmorate.model;
 
-import lombok.*;
+import lombok.Data;
 
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 @Data
-@AllArgsConstructor
 public class User {
-    @NotNull
-    private long id;
+    private Long id;
     @Email
     private String email;
     @NotNull
@@ -21,13 +21,22 @@ public class User {
     private String name;
     @NotNull
     private LocalDate birthday;
+    private Set<Long> friends = new HashSet<>();
+
+    public void addFriend(Long friendId) {
+        friends.add(friendId);
+    }
+
+    public void deleteFriend(Long friendId) {
+        friends.remove(friendId);
+    }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         User user = (User) o;
-        return id == user.id;
+        return Objects.equals(id, user.id);
     }
 
     @Override
