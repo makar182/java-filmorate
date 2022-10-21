@@ -25,7 +25,7 @@ public class UserService {
 
     public User addUser(User user) {
         if (!isUserInfoValid(user)) {
-            log.debug("Валидация при сохранении нового пользователя не пройдена!");
+            log.info("Валидация при сохранении нового пользователя не пройдена!");
             throw new ValidationException("Валидация при сохранении нового пользователя не пройдена!");
         }
         validateUserName(user);
@@ -34,10 +34,10 @@ public class UserService {
 
     public User updateUser(User user) {
         if (!isUserInfoValid(user)) {
-            log.debug(String.format("Валидация при обновлении пользователя №%d не пройдена!", user.getId()));
+            log.info(String.format("Валидация при обновлении пользователя №%d не пройдена!", user.getId()));
             throw new ValidationException(String.format("Валидация при обновлении пользователя №%d не пройдена!", user.getId()));
         } else if (!getUsers().contains(user)) {
-            log.debug(String.format("Попытка обновления несуществующего пользователя №%d!", user.getId()));
+            log.info(String.format("Попытка обновления несуществующего пользователя №%d!", user.getId()));
             throw new ObjectNotExistException(String.format("Попытка обновления несуществующего пользователя №%d!", user.getId()));
         }
         validateUserName(user);
@@ -47,7 +47,7 @@ public class UserService {
     public User getUserById(Long userId) {
         User user = userStorage.getUserById(userId);
         if (user == null) {
-            log.debug(String.format("Пользователь №%d не найден!", userId));
+            log.info(String.format("Пользователь №%d не найден!", userId));
             throw new ObjectNotExistException(String.format("Пользователь №%d не найден!", userId));
         }
         return user;
@@ -110,13 +110,13 @@ public class UserService {
         User followed = userStorage.getUserById(userIdFollowed);
 
         if (follower == null && followed == null) {
-            log.debug(String.format("Пользователя №%d и №%d не найдено!", userIdFollower, userIdFollowed));
+            log.info(String.format("Пользователя №%d и №%d не найдено!", userIdFollower, userIdFollowed));
             throw new ObjectNotExistException(String.format("Пользователя №%d и №%d не найдено!", userIdFollower, userIdFollowed));
         } else if (follower == null) {
-            log.debug(String.format("Пользователя №%d не найдено!", userIdFollower));
+            log.info(String.format("Пользователя №%d не найдено!", userIdFollower));
             throw new ObjectNotExistException(String.format("Пользователя №%d не найдено!", userIdFollower));
         } else if (followed == null) {
-            log.debug(String.format("Пользователя №%d не найдено!", userIdFollowed));
+            log.info(String.format("Пользователя №%d не найдено!", userIdFollowed));
             throw new ObjectNotExistException(String.format("Пользователя №%d не найдено!", userIdFollowed));
         }
     }
