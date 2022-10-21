@@ -25,19 +25,19 @@ public class FilmService {
 
     public Film addFilm(Film film) {
         if (!isFilmInfoValid(film)) {
-            log.debug("Валидация при сохранении фильма не пройдена!");
-            throw new ValidationException("Информация о фильме не проходит условия валидации. Фильм не добавлен!");
+            log.debug("Валидация при сохранении нового фильма не пройдена!");
+            throw new ValidationException("Информация о новом фильме не проходит условия валидации. Фильм не добавлен!");
         }
         return filmStorage.addFilm(film);
     }
 
     public Film updateFilm(Film film) {
         if (!isFilmInfoValid(film)) {
-            log.debug("Валидация при обновлении фильма не пройдена!");
-            throw new ValidationException("Информация о фильме не проходит условия валидации. Фильм не добавлен!");
+            log.debug(String.format("Валидация при обновлении фильма №%d не пройдена!", film.getId()));
+            throw new ValidationException(String.format("Информация о фильме №%d не проходит условия валидации. Фильм не добавлен!", film.getId()));
         } else if (!getFilms().contains(film)) {
-            log.debug("Попытка обновления несуществующего фильма!");
-            throw new ObjectNotExistException("Попытка обновления несуществующего фильма!");
+            log.debug(String.format("Попытка обновления несуществующего фильма №%d!", film.getId()));
+            throw new ObjectNotExistException(String.format("Попытка обновления несуществующего фильма №%d!", film.getId()));
         }
         return filmStorage.updateFilm(film);
     }
@@ -49,6 +49,7 @@ public class FilmService {
     public Film getFilmById(Long filmId) {
         Film film = filmStorage.getFilmById(filmId);
         if (film == null) {
+            log.debug(String.format(String.format("Фильм №%d не найден!", filmId)));
             throw new ObjectNotExistException(String.format("Фильм №%d не найден!", filmId));
         }
         return film;
