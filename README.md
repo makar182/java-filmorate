@@ -2,10 +2,10 @@
 ## Database
 
 ### Diagram
-![Untitled (7)](https://user-images.githubusercontent.com/6263385/198851423-c3d68165-ef62-4f0d-aa92-6f37c99c22f0.png)
+![Untitled (8)](https://user-images.githubusercontent.com/6263385/200751880-94cb6d68-f946-492c-b52f-4433074e46a5.png)
 
 ### Directories
-**sp_genre** - Справочник жанров фильмов
+**sp_film_genre** - Справочник жанров фильмов
 1. Comedy
 2. Drama
 3. Cartoon
@@ -13,7 +13,7 @@
 5. Documentary
 6. Action movie
 
-**sp_rating** - Справочник рейтингов фильмов
+**sp_film_rating** - Справочник рейтингов фильмов
 1. G
 2. PG
 3. PG-13
