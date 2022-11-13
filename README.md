@@ -2,7 +2,7 @@
 ## Database
 
 ### Diagram
-![Untitled (8)](https://user-images.githubusercontent.com/6263385/200751880-94cb6d68-f946-492c-b52f-4433074e46a5.png)
+![Untitled (9)](https://user-images.githubusercontent.com/6263385/201519938-58d0a64e-53d5-4bc2-ba56-6e4da4fd0bfc.png)
 
 ### Directories
 **sp_film_genre** - Справочник жанров фильмов
