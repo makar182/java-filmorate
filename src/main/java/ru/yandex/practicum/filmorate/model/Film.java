@@ -1,6 +1,10 @@
 package ru.yandex.practicum.filmorate.model;
 
+import lombok.Builder;
 import lombok.Data;
+import ru.yandex.practicum.filmorate.enums.FilmGenre;
+import ru.yandex.practicum.filmorate.enums.FilmRating;
+
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDate;
@@ -9,20 +13,33 @@ import java.util.Objects;
 import java.util.Set;
 
 @Data
+@Builder
 public class Film {
     @NotNull
     private long id;
+
     @NotNull
     @NotBlank
     private String name;
+
     @NotNull
     @NotBlank
     private String description;
+
     @NotNull
     private LocalDate releaseDate;
+
     @NotNull
     private int duration;
-    private Set<Long> usersLiked = new HashSet<>();
+
+    private int rate;
+
+    @NotNull
+    private Mpa mpa;
+
+    private Set<Long> usersLiked;
+
+    private Set<Genre> genres;
 
     public void addLike(Long userId) {
         usersLiked.add(userId);
