@@ -2,10 +2,10 @@
 ## Database
 
 ### Diagram
-![Untitled (9)](https://user-images.githubusercontent.com/6263385/201519938-58d0a64e-53d5-4bc2-ba56-6e4da4fd0bfc.png)
+![Untitled (10)](https://user-images.githubusercontent.com/6263385/201520003-907df0a2-2fbb-49bb-8b0b-5c11e1dc0145.png)
 
 ### Directories
-**sp_film_genre** - Справочник жанров фильмов
+**sp_genre** - Справочник жанров фильмов
 1. Comedy
 2. Drama
 3. Cartoon
@@ -13,7 +13,7 @@
 5. Documentary
 6. Action movie
 
-**sp_film_rating** - Справочник рейтингов фильмов
+**sp_mpa** - Справочник рейтингов фильмов
 1. G
 2. PG
 3. PG-13
@@ -30,7 +30,7 @@ SELECT
   f.*,
   sr.name
 FROM film f
-LEFT JOIN sp_film_rating sfr ON f.rating_id = sfr.rating_id
+LEFT JOIN sp_mpa sm ON f.rating_id = sm.rating_id
 WHERE f.film_id = %идентификатор_фильма%
 ```
 **Получить информацию о жанрах фильма по ID фильма**
@@ -40,7 +40,7 @@ SELECT
   sfg.name
 FROM film f
 INNER JOIN film_genre fg ON f.film_id = fg.film_id
-INNER JOIN sp_film_genre sfg ON fg.genre_id = sfg.genre_id
+INNER JOIN sp_genre sg ON fg.genre_id = sg.genre_id
 ```
 **Получить информацию о пользователе по ID**
 ```
