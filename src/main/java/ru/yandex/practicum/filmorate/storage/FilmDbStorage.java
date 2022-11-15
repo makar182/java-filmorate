@@ -9,6 +9,7 @@ import ru.yandex.practicum.filmorate.interfaces.FilmStorage;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
+import ru.yandex.practicum.filmorate.service.GenreService;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -18,16 +19,19 @@ import java.util.*;
 @Component("FilmDbStorage")
 public class FilmDbStorage implements FilmStorage {
     private final JdbcTemplate jdbcTemplate;
+    private final GenreService genreService;
     private final Map<String, Object> parameters;
 
     @Autowired
-    public FilmDbStorage(JdbcTemplate jdbcTemplate) {
+    public FilmDbStorage(JdbcTemplate jdbcTemplate, GenreService genreService) {
         this.jdbcTemplate = jdbcTemplate;
+        this.genreService = genreService;
         this.parameters = new HashMap<>();
     }
 
     @Override
     public Film addFilm(Film film) {
+        Set<Genre> genres = new HashSet<>();
         SimpleJdbcInsert simpleJdbcInsertFilm = new SimpleJdbcInsert(this.jdbcTemplate)
                 .withTableName("FILM")
                 .usingGeneratedKeyColumns("ID");
@@ -38,11 +42,14 @@ public class FilmDbStorage implements FilmStorage {
         parameters.put("RELEASE_DATE", film.getReleaseDate());
         parameters.put("DURATION", film.getDuration());
         parameters.put("RATE", film.getRate());
-        parameters.put("MPA", film.getMpa());
+        parameters.put("MPA_ID", film.getMpa().getId());
         long newFilmId = simpleJdbcInsertFilm.executeAndReturnKey(parameters).longValue();
 
         if(film.getGenres() != null) {
             batchFilmGenreInsert(newFilmId, new ArrayList<>(film.getGenres()));
+            for (Genre genre : film.getGenres()) {
+                genres.add(genreService.getGenreById(genre.getId()));
+            }
         }
 
         return Film.builder()
@@ -52,8 +59,8 @@ public class FilmDbStorage implements FilmStorage {
                 .releaseDate(film.getReleaseDate())
                 .duration(film.getDuration())
                 .rate(film.getRate())
-                .mpa(film.getMpa())
-                .genres(film.getGenres())
+                .mpa(new Mpa(film.getMpa().getId(), getMpaNameById(film.getMpa().getId())))
+                .genres(genres)
                 .build();
     }
 
@@ -72,6 +79,11 @@ public class FilmDbStorage implements FilmStorage {
 
         if(film.getGenres() != null) {
             batchFilmGenreInsert(film.getId(), new ArrayList<>(film.getGenres()));
+            Set<Genre> genres = new HashSet<>();
+            for (Genre genre : film.getGenres()) {
+                genres.add(genreService.getGenreById(genre.getId()));
+            }
+            film.setGenres(genres);
         }
 
         return film;
@@ -97,7 +109,12 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public Film getFilmById(Long filmId) {
         String sql = "SELECT ID, NAME, DESCRIPTION, RELEASE_DATE, DURATION, RATE, MPA_ID FROM FILM WHERE ID = " + filmId;
-        return jdbcTemplate.queryForObject(sql,this::createFilm);
+        List<Film> films = jdbcTemplate.query(sql,this::createFilm);
+        if(films.isEmpty()) {
+            return null;
+        } else {
+            return films.get(0);
+        }
     }
 
     @Override
@@ -118,6 +135,8 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     private Film createFilm(ResultSet rs, int rowNum) throws SQLException {
+        String sql = "SELECT GENRE_ID AS ID FROM FILM_GENRE WHERE FILM_ID = " + rs.getInt("ID");
+        Set<Genre> genres = new HashSet<>(jdbcTemplate.query(sql, (rsGenre, rowNumGenre) -> genreService.createGenre(rsGenre)));
         return Film.builder()
                 .id(rs.getInt("ID"))
                 .name(rs.getString("NAME"))
@@ -125,8 +144,14 @@ public class FilmDbStorage implements FilmStorage {
                 .releaseDate(rs.getDate("RELEASE_DATE").toLocalDate())
                 .duration(rs.getInt("DURATION"))
                 .rate(rs.getInt("RATE"))
-                .mpa(rs.getObject("MPA_ID", Mpa.class))
+                .mpa(new Mpa(rs.getLong("MPA_ID"), getMpaNameById(rs.getLong("MPA_ID"))))
+                .genres(genres)
                 .build();
+    }
+
+    private String getMpaNameById(long id) {
+        return jdbcTemplate.queryForObject(
+                "SELECT NAME FROM SP_MPA WHERE ID = " + id, String.class);
     }
 
     private void batchFilmGenreInsert(Long filmId, List<Genre> genres) {

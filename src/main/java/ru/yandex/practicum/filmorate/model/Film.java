@@ -2,13 +2,9 @@ package ru.yandex.practicum.filmorate.model;
 
 import lombok.Builder;
 import lombok.Data;
-import ru.yandex.practicum.filmorate.enums.FilmGenre;
-import ru.yandex.practicum.filmorate.enums.FilmRating;
-
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDate;
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -42,10 +38,12 @@ public class Film {
     private Set<Genre> genres;
 
     public void addLike(Long userId) {
+        rate++;
         usersLiked.add(userId);
     }
 
     public void deleteLike(Long userId) {
+        rate--;
         usersLiked.remove(userId);
     }
 

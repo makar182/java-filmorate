@@ -11,4 +11,8 @@ public class Mpa {
         this.id = id;
         this.name = name;
     }
+
+    public Mpa(long id) {
+        this.id = id;
+    }
 }
