@@ -31,7 +31,7 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Film addFilm(Film film) {
-        Set<Genre> genres = new HashSet<>();
+        List<Genre> genres = new ArrayList<>();
         SimpleJdbcInsert simpleJdbcInsertFilm = new SimpleJdbcInsert(this.jdbcTemplate)
                 .withTableName("FILM")
                 .usingGeneratedKeyColumns("ID");
@@ -52,16 +52,10 @@ public class FilmDbStorage implements FilmStorage {
             }
         }
 
-        return Film.builder()
-                .id(newFilmId)
-                .name(film.getName())
-                .description(film.getDescription())
-                .releaseDate(film.getReleaseDate())
-                .duration(film.getDuration())
-                .rate(film.getRate())
-                .mpa(new Mpa(film.getMpa().getId(), getMpaNameById(film.getMpa().getId())))
-                .genres(genres)
-                .build();
+        film.setId(newFilmId);
+        film.setMpa(new Mpa(film.getMpa().getId(), getMpaNameById(film.getMpa().getId())));
+        film.setGenres(genres);
+        return film;
     }
 
     @Override
@@ -78,11 +72,14 @@ public class FilmDbStorage implements FilmStorage {
         jdbcTemplate.update(sql, args);
 
         if(film.getGenres() != null) {
-            batchFilmGenreInsert(film.getId(), new ArrayList<>(film.getGenres()));
-            Set<Genre> genres = new HashSet<>();
+            List<Genre> genres = new ArrayList<>();
             for (Genre genre : film.getGenres()) {
-                genres.add(genreService.getGenreById(genre.getId()));
+                if(!genres.contains(genre)) {
+                    genres.add(genreService.getGenreById(genre.getId()));
+                }
             }
+            genres.sort((o1, o2) -> (int) (o1.getId() - o2.getId()));
+            batchFilmGenreInsert(film.getId(), genres);
             film.setGenres(genres);
         }
 
@@ -102,14 +99,21 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public List<Film> getFilms() {
-        String sql = "SELECT ID, NAME, DESCRIPTION, RELEASE_DATE, DURATION, RATE, MPA_ID FROM FILM";
-        return jdbcTemplate.query(sql, this::createFilm);
+        String sql = "SELECT FILM.ID, FILM.NAME, FILM.DESCRIPTION, " +
+                    "FILM.RELEASE_DATE, FILM.DURATION, FILM.RATE, FILM.MPA_ID, SP_MPA.NAME AS MPA_NAME " +
+                    "FROM FILM " +
+                    "JOIN SP_MPA on FILM.MPA_ID = SP_MPA.ID";
+        return jdbcTemplate.query(sql, this::makeFilm);
     }
 
     @Override
     public Film getFilmById(Long filmId) {
-        String sql = "SELECT ID, NAME, DESCRIPTION, RELEASE_DATE, DURATION, RATE, MPA_ID FROM FILM WHERE ID = " + filmId;
-        List<Film> films = jdbcTemplate.query(sql,this::createFilm);
+        String sql = "SELECT FILM.ID, FILM.NAME, FILM.DESCRIPTION, " +
+                    "FILM.RELEASE_DATE, FILM.DURATION, FILM.RATE, FILM.MPA_ID, SP_MPA.NAME AS MPA_NAME " +
+                    "FROM FILM JOIN SP_MPA " +
+                    "ON FILM.MPA_ID = SP_MPA.ID " +
+                    "WHERE FILM.ID = ?";
+        List<Film> films = jdbcTemplate.query(sql,this::makeFilm, filmId);
         if(films.isEmpty()) {
             return null;
         } else {
@@ -134,9 +138,9 @@ public class FilmDbStorage implements FilmStorage {
         jdbcTemplate.update(sql, args);
     }
 
-    private Film createFilm(ResultSet rs, int rowNum) throws SQLException {
+    private Film makeFilm(ResultSet rs, int rowNum) throws SQLException {
         String sql = "SELECT GENRE_ID AS ID FROM FILM_GENRE WHERE FILM_ID = " + rs.getInt("ID");
-        Set<Genre> genres = new HashSet<>(jdbcTemplate.query(sql, (rsGenre, rowNumGenre) -> genreService.createGenre(rsGenre)));
+        List<Genre> genres = jdbcTemplate.query(sql, (rsGenre, rowNumGenre) -> genreService.makeGenre(rsGenre));
         return Film.builder()
                 .id(rs.getInt("ID"))
                 .name(rs.getString("NAME"))
@@ -144,7 +148,7 @@ public class FilmDbStorage implements FilmStorage {
                 .releaseDate(rs.getDate("RELEASE_DATE").toLocalDate())
                 .duration(rs.getInt("DURATION"))
                 .rate(rs.getInt("RATE"))
-                .mpa(new Mpa(rs.getLong("MPA_ID"), getMpaNameById(rs.getLong("MPA_ID"))))
+                .mpa(new Mpa(rs.getLong("MPA_ID"), rs.getString("MPA_NAME")))
                 .genres(genres)
                 .build();
     }

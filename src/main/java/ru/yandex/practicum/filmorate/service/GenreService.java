@@ -25,7 +25,7 @@ public class GenreService {
         return genreDbStorage.getGenreById(genreId);
     }
 
-    public Genre createGenre(ResultSet rs) throws SQLException {
+    public Genre makeGenre(ResultSet rs) throws SQLException {
         Genre genre = getGenreById(rs.getLong("ID"));
         return Genre.builder()
                 .id(genre.getId())

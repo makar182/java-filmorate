@@ -5,6 +5,7 @@ import lombok.Data;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -35,7 +36,7 @@ public class Film {
 
     private Set<Long> usersLiked;
 
-    private Set<Genre> genres;
+    private List<Genre> genres;
 
     public void addLike(Long userId) {
         rate++;
