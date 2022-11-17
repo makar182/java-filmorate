@@ -50,22 +50,6 @@ public class dbUserStorage implements UserStorage {
         sql = "UPDATE USERS SET EMAIL = ?, LOGIN = ?, NAME = ?, BIRTHDAY = ?" +
                 "WHERE ID = ?";
         jdbcTemplate.update(sql, user.getEmail(), user.getLogin(), user.getName(), user.getBirthday(), user.getId());
-
-//        sql = "DELETE FROM FILM_GENRE WHERE FILM_ID = ?";
-//        Object[] args = new Object[]{film.getId()};
-//        jdbcTemplate.update(sql, args);
-
-//        if(film.getGenres() != null) {
-//            List<Genre> genres = new ArrayList<>();
-//            for (Genre genre : film.getGenres()) {
-//                if(!genres.contains(genre)) {
-//                    genres.add(genreService.getGenreById(genre.getId()));
-//                }
-//            }
-//            genres.sort((o1, o2) -> (int) (o1.getId() - o2.getId()));
-//            batchFilmGenreInsert(film.getId(), genres);
-//            film.setGenres(genres);
-//        }
         return user;
     }
 
