@@ -11,7 +11,7 @@ import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Set;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -20,7 +20,7 @@ public class UserService {
     private final UserStorage userStorage;
 
     @Autowired
-    public UserService(@Qualifier("UserDbStorage") UserStorage userStorage) {
+    public UserService(@Qualifier("dbUserStorage") UserStorage userStorage) {
         this.userStorage = userStorage;
     }
 
@@ -46,53 +46,56 @@ public class UserService {
     }
 
     public User getUserById(Long userId) {
-        User user = userStorage.getUserById(userId);
-        if (user == null) {
+        Optional<User> user = userStorage.getUserById(userId);
+        if (user.isEmpty()) {
             log.info(String.format("Пользователь №%d не найден!", userId));
             throw new ObjectNotExistException(String.format("Пользователь №%d не найден!", userId));
         }
-        return user;
+        return user.get();
     }
 
     public List<User> getUsers() {
         return userStorage.getUsers();
     }
 
-    public void addToFriends(Long userIdFollower, Long userIdFollowed) {
-        isFollowerAndFollowedExist(userIdFollower, userIdFollowed);
-
-        User follower = userStorage.getUserById(userIdFollower);
-        User followed = userStorage.getUserById(userIdFollowed);
-
-        follower.addFriend(userIdFollowed);
-        followed.addFriend(userIdFollower);
+    public void addToFriends(Long userId, Long friendId) {
+        isUserAndFriendExist(userId, friendId);
+        userStorage.addToFriends(friendId, userId);
     }
 
-    public void deleteFromFriends(Long userIdFollower, Long userIdFollowed) {
-        userStorage.getUserById(userIdFollowed).deleteFriend(userIdFollower);
-        userStorage.getUserById(userIdFollower).deleteFriend(userIdFollowed);
+    public void deleteFromFriends(Long userId, Long friendId) {
+        isUserAndFriendExist(userId, friendId);
+        userStorage.deleteFromFriends(friendId, userId);
     }
 
     public List<User> getFriendsByUserId(Long userId) {
-        Set<Long> friends = userStorage.getUserById(userId).getFriends();
-
-        return friends.stream()
-                .map(userStorage::getUserById)
-                .collect(Collectors.toList());
+        List<Long> friends = userStorage.getFriends(userId);
+        if (friends.isEmpty()) {
+            return List.of();
+        } else {
+            return friends.stream()
+                    .map(userStorage::getUserById)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .collect(Collectors.toList());
+        }
     }
 
-    public List<User> getFriendsInCommon(Long userIdFollower, Long userIdFollowed) {
-        isFollowerAndFollowedExist(userIdFollower, userIdFollowed);
+    public List<User> getFriendsInCommon(Long userId, Long friendId) {
+        isUserAndFriendExist(userId, friendId);
 
-        User follower = userStorage.getUserById(userIdFollower);
-        User followed = userStorage.getUserById(userIdFollowed);
+        List<Long> userFriends = userStorage.getFriends(userId);
+        List<Long> friendFriends = userStorage.getFriends(friendId);
 
-        Set<Long> userIdFollowerFriends = follower.getFriends();
-        Set<Long> userIdFollowedFriends = followed.getFriends();
+        if (userFriends.isEmpty() || friendFriends.isEmpty()) {
+            return List.of();
+        }
 
-        return userIdFollowerFriends.stream()
-                .filter(userIdFollowedFriends::contains)
+        return userFriends.stream()
+                .filter(friendFriends::contains)
                 .map(userStorage::getUserById)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
                 .collect(Collectors.toList());
     }
 
@@ -106,19 +109,19 @@ public class UserService {
         return user.getEmail().contains("@") && user.getBirthday().isBefore(LocalDate.now());
     }
 
-    private void isFollowerAndFollowedExist(Long userIdFollower, Long userIdFollowed) {
-        User follower = userStorage.getUserById(userIdFollower);
-        User followed = userStorage.getUserById(userIdFollowed);
+    private void isUserAndFriendExist(Long userId, Long friendId) {
+        Optional<User> user = userStorage.getUserById(userId);
+        Optional<User> friend = userStorage.getUserById(friendId);
 
-        if (follower == null && followed == null) {
-            log.info(String.format("Пользователя №%d и №%d не найдено!", userIdFollower, userIdFollowed));
-            throw new ObjectNotExistException(String.format("Пользователя №%d и №%d не найдено!", userIdFollower, userIdFollowed));
-        } else if (follower == null) {
-            log.info(String.format("Пользователя №%d не найдено!", userIdFollower));
-            throw new ObjectNotExistException(String.format("Пользователя №%d не найдено!", userIdFollower));
-        } else if (followed == null) {
-            log.info(String.format("Пользователя №%d не найдено!", userIdFollowed));
-            throw new ObjectNotExistException(String.format("Пользователя №%d не найдено!", userIdFollowed));
+        if (user.isEmpty() && friend.isEmpty()) {
+            log.info(String.format("Пользователя №%d и №%d не найдено!", userId, friendId));
+            throw new ObjectNotExistException(String.format("Пользователя №%d и №%d не найдено!", userId, friendId));
+        } else if (user.isEmpty()) {
+            log.info(String.format("Пользователя №%d не найдено!", userId));
+            throw new ObjectNotExistException(String.format("Пользователя №%d не найдено!", userId));
+        } else if (friend.isEmpty()) {
+            log.info(String.format("Пользователя №%d не найдено!", friendId));
+            throw new ObjectNotExistException(String.format("Пользователя №%d не найдено!", friendId));
         }
     }
 }

@@ -5,10 +5,8 @@ import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exceptions.ObjectNotExistException;
 import ru.yandex.practicum.filmorate.interfaces.FilmStorage;
 import ru.yandex.practicum.filmorate.model.Film;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
 
 @Component("InMemoryFilmStorage")
 @Slf4j
@@ -38,8 +36,8 @@ public class InMemoryFilmStorage implements FilmStorage {
         return film;
     }
 
-    public Film getFilmById(Long filmId) {
-        return films.get(filmId);
+    public Optional<Film> getFilmById(Long filmId) {
+        return Optional.ofNullable(films.get(filmId));
     }
 
     @Override
@@ -48,12 +46,13 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     public void addLike(Long userId, Long filmId) {
-        films.get(filmId).addLike(userId);
+        Film film = films.get(filmId);
+        film.getUsersLiked().add(userId);
+        film.setRate(film.getRate()+1);
     }
 
     public void deleteLike(Long userId, Long filmId) {
         Film film = films.get(filmId);
-
         if (film != null) {
             if (film.getUsersLiked().contains(userId)) {
                 film.getUsersLiked().remove(userId);

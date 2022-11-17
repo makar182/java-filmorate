@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.model;
 
 import lombok.Builder;
 import lombok.Data;
+
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -14,22 +15,13 @@ public class User {
     private Long id;
     @Email
     private String email;
+    private String name;
     @NotNull
     @NotBlank
     private String login;
-    private String name;
     @NotNull
     private LocalDate birthday;
-    private Set<Long> friends;
-    //private Map<Long, FriendshipStatus> friendsNew = new HashMap<>();
-
-    public void addFriend(Long friendId) {
-        friends.add(friendId);
-    }
-
-    public void deleteFriend(Long friendId) {
-        friends.remove(friendId);
-    }
+    private List<Long> friends;
 
     @Override
     public boolean equals(Object o) {

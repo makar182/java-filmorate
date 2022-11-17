@@ -6,19 +6,21 @@ import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.interfaces.UserStorage;
 import ru.yandex.practicum.filmorate.model.User;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
-@Component("UserDbStorage")
-public class UserDbStorage implements UserStorage {
+@Component("dbUserStorage")
+public class dbUserStorage implements UserStorage {
     private final JdbcTemplate jdbcTemplate;
     private final Map<String, Object> parameters;
 
     @Autowired
-    public UserDbStorage(JdbcTemplate jdbcTemplate) {
+    public dbUserStorage(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
         this.parameters = new HashMap<>();
     }
@@ -64,7 +66,6 @@ public class UserDbStorage implements UserStorage {
 //            batchFilmGenreInsert(film.getId(), genres);
 //            film.setGenres(genres);
 //        }
-
         return user;
     }
 
@@ -79,7 +80,7 @@ public class UserDbStorage implements UserStorage {
 
         sql = "DELETE FROM USERS WHERE ID = ?";
         args = new Object[]{user.getId()};
-        if(jdbcTemplate.update(sql, args) == 1) {
+        if (jdbcTemplate.update(sql, args) == 1) {
             return user;
         } else {
             return null;
@@ -87,16 +88,16 @@ public class UserDbStorage implements UserStorage {
     }
 
     @Override
-    public User getUserById(Long userId) {
+    public Optional<User> getUserById(Long userId) {
         String sql = "SELECT ID, EMAIL, LOGIN, NAME, BIRTHDAY " +
                 "FROM USERS " +
                 "WHERE USERS.ID = ?";
 
         List<User> users = jdbcTemplate.query(sql, this::makeUser, userId);
-        if(users.isEmpty()) {
-            return null;
+        if (users.isEmpty()) {
+            return Optional.empty();
         } else {
-            return users.get(0);
+            return Optional.ofNullable(users.get(0));
         }
     }
 
@@ -107,8 +108,6 @@ public class UserDbStorage implements UserStorage {
     }
 
     private User makeUser(ResultSet rs, int rowNum) throws SQLException {
-//        String sql = "SELECT GENRE_ID AS ID FROM FILM_GENRE WHERE FILM_ID = " + rs.getInt("ID");
-//        List<Genre> genres = jdbcTemplate.query(sql, (rsGenre, rowNumGenre) -> genreService.makeGenre(rsGenre));
         return User.builder()
                 .id(rs.getLong("ID"))
                 .email(rs.getString("EMAIL"))
@@ -116,5 +115,32 @@ public class UserDbStorage implements UserStorage {
                 .name(rs.getString("NAME"))
                 .birthday(rs.getDate("BIRTHDAY").toLocalDate())
                 .build();
+    }
+
+    public List<Long> getFriends(Long userId) {
+        String sql = "SELECT FRIEND_ID FROM FRIENDS WHERE USER_ID = ?";
+        return jdbcTemplate.query(sql, ((rs, rowNum) -> rs.getLong("FRIEND_ID")), userId);
+    }
+
+    @Override
+    public void addToFriends(Long userId, Long friendId) {
+        String sql = "SELECT COUNT(*) FROM FRIENDS WHERE USER_ID = ? AND FRIEND_ID = ?";
+        int count = jdbcTemplate.queryForObject(sql, Integer.class, friendId, userId);
+        if (count == 0) {
+            SimpleJdbcInsert simpleJdbcInsertFriend = new SimpleJdbcInsert(this.jdbcTemplate)
+                    .withTableName("FRIENDS");
+
+            parameters.clear();
+            parameters.put("USER_ID", friendId);
+            parameters.put("FRIEND_ID", userId);
+            simpleJdbcInsertFriend.execute(parameters);
+        }
+    }
+
+    @Override
+    public void deleteFromFriends(Long userId, Long friendId) {
+        String sql = "DELETE FROM FRIENDS WHERE USER_ID = ? AND FRIEND_ID = ?";
+        Object[] args = new Object[]{friendId, userId};
+        jdbcTemplate.update(sql, args);
     }
 }

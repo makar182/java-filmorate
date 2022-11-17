@@ -28,8 +28,8 @@ public class UserController {
         return userService.updateUser(user);
     }
 
-    @PutMapping("/{id}/friends/{friendId}")
-    public void addToFriends(@PathVariable("id") Long userId, @PathVariable("friendId") Long friendId) {
+    @PutMapping("/{userId}/friends/{friendId}")
+    public void addToFriends(@PathVariable("userId") Long userId, @PathVariable("friendId") Long friendId) {
         userService.addToFriends(userId, friendId);
     }
 

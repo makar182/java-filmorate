@@ -5,6 +5,7 @@ import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Component;
+import ru.yandex.practicum.filmorate.exceptions.ObjectNotExistException;
 import ru.yandex.practicum.filmorate.interfaces.FilmStorage;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
@@ -16,14 +17,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
-@Component("FilmDbStorage")
-public class FilmDbStorage implements FilmStorage {
+@Component("dbFilmStorage")
+public class dbFilmStorage implements FilmStorage {
     private final JdbcTemplate jdbcTemplate;
     private final GenreService genreService;
     private final Map<String, Object> parameters;
 
     @Autowired
-    public FilmDbStorage(JdbcTemplate jdbcTemplate, GenreService genreService) {
+    public dbFilmStorage(JdbcTemplate jdbcTemplate, GenreService genreService) {
         this.jdbcTemplate = jdbcTemplate;
         this.genreService = genreService;
         this.parameters = new HashMap<>();
@@ -45,7 +46,7 @@ public class FilmDbStorage implements FilmStorage {
         parameters.put("MPA_ID", film.getMpa().getId());
         long newFilmId = simpleJdbcInsertFilm.executeAndReturnKey(parameters).longValue();
 
-        if(film.getGenres() != null) {
+        if (film.getGenres() != null) {
             batchFilmGenreInsert(newFilmId, new ArrayList<>(film.getGenres()));
             for (Genre genre : film.getGenres()) {
                 genres.add(genreService.getGenreById(genre.getId()));
@@ -63,18 +64,18 @@ public class FilmDbStorage implements FilmStorage {
         String sql;
 
         sql = "UPDATE FILM SET NAME = ?, DESCRIPTION = ?, RELEASE_DATE = ?, DURATION = ?" +
-                     ", RATE = ?, MPA_ID = ? WHERE ID = ?";
+                ", RATE = ?, MPA_ID = ? WHERE ID = ?";
         jdbcTemplate.update(sql, film.getName(), film.getDescription(), film.getReleaseDate(),
-                                 film.getDuration(), film.getRate(), film.getMpa().getId(), film.getId());
+                film.getDuration(), film.getRate(), film.getMpa().getId(), film.getId());
 
         sql = "DELETE FROM FILM_GENRE WHERE FILM_ID = ?";
         Object[] args = new Object[]{film.getId()};
         jdbcTemplate.update(sql, args);
 
-        if(film.getGenres() != null) {
+        if (film.getGenres() != null) {
             List<Genre> genres = new ArrayList<>();
             for (Genre genre : film.getGenres()) {
-                if(!genres.contains(genre)) {
+                if (!genres.contains(genre)) {
                     genres.add(genreService.getGenreById(genre.getId()));
                 }
             }
@@ -90,7 +91,7 @@ public class FilmDbStorage implements FilmStorage {
     public Film deleteFilm(Film film) {
         String sql = "DELETE FROM FILM WHERE ID = ?";
         Object[] args = new Object[]{film.getId()};
-        if(jdbcTemplate.update(sql, args) == 1) {
+        if (jdbcTemplate.update(sql, args) == 1) {
             return film;
         } else {
             return null;
@@ -100,40 +101,55 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public List<Film> getFilms() {
         String sql = "SELECT FILM.ID, FILM.NAME, FILM.DESCRIPTION, " +
-                    "FILM.RELEASE_DATE, FILM.DURATION, FILM.RATE, FILM.MPA_ID, SP_MPA.NAME AS MPA_NAME " +
-                    "FROM FILM " +
-                    "JOIN SP_MPA on FILM.MPA_ID = SP_MPA.ID";
+                "FILM.RELEASE_DATE, FILM.DURATION, FILM.RATE, FILM.MPA_ID, SP_MPA.NAME AS MPA_NAME " +
+                "FROM FILM " +
+                "JOIN SP_MPA on FILM.MPA_ID = SP_MPA.ID";
         return jdbcTemplate.query(sql, this::makeFilm);
     }
 
     @Override
-    public Film getFilmById(Long filmId) {
+    public Optional<Film> getFilmById(Long filmId) {
         String sql = "SELECT FILM.ID, FILM.NAME, FILM.DESCRIPTION, " +
-                    "FILM.RELEASE_DATE, FILM.DURATION, FILM.RATE, FILM.MPA_ID, SP_MPA.NAME AS MPA_NAME " +
-                    "FROM FILM JOIN SP_MPA " +
-                    "ON FILM.MPA_ID = SP_MPA.ID " +
-                    "WHERE FILM.ID = ?";
-        List<Film> films = jdbcTemplate.query(sql,this::makeFilm, filmId);
-        if(films.isEmpty()) {
-            return null;
+                "FILM.RELEASE_DATE, FILM.DURATION, FILM.RATE, FILM.MPA_ID, SP_MPA.NAME AS MPA_NAME " +
+                "FROM FILM JOIN SP_MPA " +
+                "ON FILM.MPA_ID = SP_MPA.ID " +
+                "WHERE FILM.ID = ?";
+        List<Film> films = jdbcTemplate.query(sql, this::makeFilm, filmId);
+        if (films.isEmpty()) {
+            return Optional.empty();
         } else {
-            return films.get(0);
+            return Optional.of(films.get(0));
         }
     }
 
     @Override
     public void addLike(Long userId, Long filmId) {
-        SimpleJdbcInsert simpleJdbcInsertFilmUserLikes = new SimpleJdbcInsert(this.jdbcTemplate)
-                                                                             .withTableName("FILM_USER_LIKES");
-        parameters.clear();
-        parameters.put("USER_ID", userId);
-        parameters.put("FILM_ID", filmId);
-        simpleJdbcInsertFilmUserLikes.execute(parameters);
+        String sql;
+        sql = "SELECT COUNT(*) FROM FILM_USER_LIKES WHERE USER_ID = ? AND FILM_ID = ?";
+        int count = jdbcTemplate.queryForObject(sql, Integer.class, userId, filmId);
+        if (count == 0) {
+            SimpleJdbcInsert simpleJdbcInsertFilmUserLikes = new SimpleJdbcInsert(this.jdbcTemplate)
+                    .withTableName("FILM_USER_LIKES");
+            parameters.clear();
+            parameters.put("USER_ID", userId);
+            parameters.put("FILM_ID", filmId);
+            simpleJdbcInsertFilmUserLikes.execute(parameters);
+
+            sql = "UPDATE FILM SET RATE = RATE + 1 WHERE ID = ?";
+            Object[] args = new Object[]{filmId};
+            jdbcTemplate.update(sql, args);
+        }
     }
 
     @Override
     public void deleteLike(Long userId, Long filmId) {
-        String sql = "DELETE FROM FILM_USER_LIKES WHERE USER_ID = ? AND FILM_ID = ?";
+        String sql;
+        sql = "SELECT COUNT(*) FROM FILM_USER_LIKES WHERE USER_ID = ? AND FILM_ID = ?";
+        int count = jdbcTemplate.queryForObject(sql, Integer.class, userId, filmId);
+        if (count == 0) {
+            throw new ObjectNotExistException(String.format("Пользователь с ID = %d не лайкал фильм с ID = %d", userId, filmId));
+        }
+        sql = "DELETE FROM FILM_USER_LIKES WHERE USER_ID = ? AND FILM_ID = ?";
         Object[] args = new Object[]{userId, filmId};
         jdbcTemplate.update(sql, args);
     }
@@ -166,6 +182,7 @@ public class FilmDbStorage implements FilmStorage {
                         ps.setLong(1, filmId);
                         ps.setLong(2, genres.get(i).getId());
                     }
+
                     @Override
                     public int getBatchSize() {
                         return genres.size();

@@ -3,7 +3,7 @@ package ru.yandex.practicum.filmorate.service;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.model.Genre;
-import ru.yandex.practicum.filmorate.storage.GenreDbStorage;
+import ru.yandex.practicum.filmorate.storage.dbGenreStorage;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -11,9 +11,9 @@ import java.util.List;
 
 @Service
 public class GenreService {
-    private final GenreDbStorage genreDbStorage;
+    private final dbGenreStorage genreDbStorage;
 
-    public GenreService(@Qualifier("GenreDbStorage") GenreDbStorage genreDbStorage) {
+    public GenreService(@Qualifier("GenreDbStorage") dbGenreStorage genreDbStorage) {
         this.genreDbStorage = genreDbStorage;
     }
 

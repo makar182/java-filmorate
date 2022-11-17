@@ -12,6 +12,7 @@ import ru.yandex.practicum.filmorate.model.Film;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -20,7 +21,7 @@ public class FilmService {
     private final FilmStorage filmStorage;
 
     @Autowired
-    public FilmService(@Qualifier("FilmDbStorage") FilmStorage filmStorage) {
+    public FilmService(@Qualifier("dbFilmStorage") FilmStorage filmStorage) {
         this.filmStorage = filmStorage;
     }
 
@@ -48,12 +49,12 @@ public class FilmService {
     }
 
     public Film getFilmById(Long filmId) {
-        Film film = filmStorage.getFilmById(filmId);
-        if (film == null) {
+        Optional<Film> film = filmStorage.getFilmById(filmId);
+        if (film.isEmpty()) {
             log.info(String.format(String.format("Фильм №%d не найден!", filmId)));
             throw new ObjectNotExistException(String.format("Фильм №%d не найден!", filmId));
         }
-        return film;
+        return film.get();
     }
 
     public void addLike(Long userId, Long filmId) {
