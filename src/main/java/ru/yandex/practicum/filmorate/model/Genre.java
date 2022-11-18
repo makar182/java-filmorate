@@ -1,14 +1,16 @@
 package ru.yandex.practicum.filmorate.model;
 
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.Objects;
 
-@Data
 @Builder
+@Getter
+@Setter
 public class Genre {
-    private long id;
+    private Long id;
     private String name;
 
     public Genre(long id, String name) {

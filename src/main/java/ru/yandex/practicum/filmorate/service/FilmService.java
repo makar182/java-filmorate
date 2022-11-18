@@ -10,19 +10,21 @@ import ru.yandex.practicum.filmorate.interfaces.FilmStorage;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.time.LocalDate;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 public class FilmService {
     private final FilmStorage filmStorage;
+    private final GenreService genreService;
+    private final MpaService mpaService;
 
     @Autowired
-    public FilmService(@Qualifier("dbFilmStorage") FilmStorage filmStorage) {
+    public FilmService(@Qualifier("dbFilmStorage") FilmStorage filmStorage, GenreService genreService, MpaService mpaService) {
         this.filmStorage = filmStorage;
+        this.genreService = genreService;
+        this.mpaService = mpaService;
     }
 
     public Film addFilm(Film film) {
@@ -30,47 +32,80 @@ public class FilmService {
             log.info("Валидация при сохранении нового фильма не пройдена!");
             throw new ValidationException("Информация о новом фильме не проходит условия валидации. Фильм не добавлен!");
         }
-        return filmStorage.addFilm(film);
+
+        Film newFilm = filmStorage.addFilm(film);
+
+        if (newFilm.getGenres() != null) {
+            filmStorage.batchFilmGenreInsert(newFilm.getId(), newFilm.getGenres());
+            genreService.addGenresToFilms(List.of(newFilm));
+        }
+
+        mpaService.addMpaToFilms(List.of(newFilm));
+
+        log.info(String.format("Новый фильм с ID = %d добавлен!", newFilm.getId()));
+        return newFilm;
     }
 
     public Film updateFilm(Film film) {
         if (!isFilmInfoValid(film)) {
-            log.info(String.format("Валидация при обновлении фильма №%d не пройдена!", film.getId()));
-            throw new ValidationException(String.format("Информация о фильме №%d не проходит условия валидации. Фильм не добавлен!", film.getId()));
+            log.info(String.format("Валидация при обновлении фильма с ID = %d не пройдена!", film.getId()));
+            throw new ValidationException(String.format("Информация о фильме с ID = %d не проходит условия валидации. Фильм не добавлен!", film.getId()));
         } else if (!getFilms().contains(film)) {
-            log.info(String.format("Попытка обновления несуществующего фильма №%d!", film.getId()));
-            throw new ObjectNotExistException(String.format("Попытка обновления несуществующего фильма №%d!", film.getId()));
+            log.info(String.format("Попытка обновления несуществующего фильма с ID = %d!", film.getId()));
+            throw new ObjectNotExistException(String.format("Попытка обновления несуществующего фильма с ID = %d!", film.getId()));
         }
-        return filmStorage.updateFilm(film);
+
+        Film newFilm = filmStorage.updateFilm(film);
+
+        if (newFilm.getGenres() != null) {
+            filmStorage.batchFilmGenreInsert(newFilm.getId(), newFilm.getGenres());
+            genreService.addGenresToFilms(List.of(newFilm));
+            newFilm.getGenres().sort((o1, o2) -> (int) (o1.getId() - o2.getId()));
+        }
+
+        mpaService.addMpaToFilms(List.of(newFilm));
+
+        log.info(String.format("Фильм с ID = %d обновлен!", newFilm.getId()));
+        return newFilm;
     }
 
     public List<Film> getFilms() {
-        return filmStorage.getFilms();
+        List<Film> films = filmStorage.getFilms();
+        genreService.addGenresToFilms(films);
+        mpaService.addMpaToFilms(films);
+        log.info("Запрос на получение списка фильмов getFilms выполнен!");
+        return films;
     }
 
     public Film getFilmById(Long filmId) {
-        Optional<Film> film = filmStorage.getFilmById(filmId);
-        if (film.isEmpty()) {
-            log.info(String.format(String.format("Фильм №%d не найден!", filmId)));
-            throw new ObjectNotExistException(String.format("Фильм №%d не найден!", filmId));
-        }
-        return film.get();
+        Film film = filmStorage.getFilmById(filmId).orElseThrow(() -> {
+            log.info(String.format(String.format("Фильм с ID = %d не найден!", filmId)));
+            throw new ObjectNotExistException(String.format("Фильм с ID = %d не найден!", filmId));
+        });
+
+        genreService.addGenresToFilms(List.of(film));
+        mpaService.addMpaToFilms(List.of(film));
+        log.info(String.format(String.format("Фильм с ID = %d найден!", filmId)));
+        return film;
     }
 
     public void addLike(Long userId, Long filmId) {
         filmStorage.addLike(userId, filmId);
+        log.info(String.format(String.format("Пользователь с ID = %d поставил лайк фильму с ID = %d!", userId, filmId)));
     }
 
     public void deleteLike(Long userId, Long filmId) {
         filmStorage.deleteLike(userId, filmId);
+        log.info(String.format(String.format("Пользователь с ID = %d удалил лайк фильму с ID = %d!", userId, filmId)));
     }
 
     public List<Film> getTopFilms(int count) {
-        List<Film> films = filmStorage.getFilms();
-        return films.stream().sorted(Comparator.comparingInt(Film::getRate))
-                .sorted(Comparator.comparingInt(f -> f.getRate() * -1))
+        List<Film> result = getFilms().stream()
+                .sorted(Comparator.comparingLong(f -> f.getRate() * -1))
                 .limit(count)
                 .collect(Collectors.toList());
+        log.info("Запрос на получение списка ТОП-фильмов выполнен!");
+        return result;
     }
 
     private boolean isFilmInfoValid(Film film) {

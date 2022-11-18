@@ -1,9 +1,10 @@
 package ru.yandex.practicum.filmorate.storage;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.interfaces.UserStorage;
 import ru.yandex.practicum.filmorate.model.User;
 
@@ -14,15 +15,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-@Component("dbUserStorage")
+@Slf4j
+@Repository("dbUserStorage")
 public class dbUserStorage implements UserStorage {
     private final JdbcTemplate jdbcTemplate;
-    private final Map<String, Object> parameters;
 
     @Autowired
     public dbUserStorage(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
-        this.parameters = new HashMap<>();
     }
 
 
@@ -32,7 +32,7 @@ public class dbUserStorage implements UserStorage {
                 .withTableName("USERS")
                 .usingGeneratedKeyColumns("ID");
 
-        parameters.clear();
+        final Map<String, Object> parameters = new HashMap<>();
         parameters.put("EMAIL", user.getEmail());
         parameters.put("LOGIN", user.getLogin());
         parameters.put("NAME", user.getName());
@@ -67,6 +67,8 @@ public class dbUserStorage implements UserStorage {
         if (jdbcTemplate.update(sql, args) == 1) {
             return user;
         } else {
+            log.info(String.format("Не удалось удалить пользователя с ID = %d," +
+                    " т.к. такого пользователя не нашлось!", user.getId()));
             return null;
         }
     }
@@ -91,16 +93,7 @@ public class dbUserStorage implements UserStorage {
         return jdbcTemplate.query(sql, this::makeUser);
     }
 
-    private User makeUser(ResultSet rs, int rowNum) throws SQLException {
-        return User.builder()
-                .id(rs.getLong("ID"))
-                .email(rs.getString("EMAIL"))
-                .login(rs.getString("LOGIN"))
-                .name(rs.getString("NAME"))
-                .birthday(rs.getDate("BIRTHDAY").toLocalDate())
-                .build();
-    }
-
+    @Override
     public List<Long> getFriends(Long userId) {
         String sql = "SELECT FRIEND_ID FROM FRIENDS WHERE USER_ID = ?";
         return jdbcTemplate.query(sql, ((rs, rowNum) -> rs.getLong("FRIEND_ID")), userId);
@@ -114,7 +107,7 @@ public class dbUserStorage implements UserStorage {
             SimpleJdbcInsert simpleJdbcInsertFriend = new SimpleJdbcInsert(this.jdbcTemplate)
                     .withTableName("FRIENDS");
 
-            parameters.clear();
+            final Map<String, Object> parameters = new HashMap<>();
             parameters.put("USER_ID", friendId);
             parameters.put("FRIEND_ID", userId);
             simpleJdbcInsertFriend.execute(parameters);
@@ -126,5 +119,15 @@ public class dbUserStorage implements UserStorage {
         String sql = "DELETE FROM FRIENDS WHERE USER_ID = ? AND FRIEND_ID = ?";
         Object[] args = new Object[]{friendId, userId};
         jdbcTemplate.update(sql, args);
+    }
+
+    private User makeUser(ResultSet rs, int rowNum) throws SQLException {
+        return User.builder()
+                .id(rs.getLong("ID"))
+                .email(rs.getString("EMAIL"))
+                .login(rs.getString("LOGIN"))
+                .name(rs.getString("NAME"))
+                .birthday(rs.getDate("BIRTHDAY").toLocalDate())
+                .build();
     }
 }
