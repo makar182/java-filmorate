@@ -44,7 +44,8 @@ public class Film {
     @JsonIgnore
     private List<Long> usersLiked;
 
-    private List<Genre> genres;
+    @Builder.Default
+    private List<Genre> genres = new ArrayList<>();
 
     @Override
     public boolean equals(Object o) {

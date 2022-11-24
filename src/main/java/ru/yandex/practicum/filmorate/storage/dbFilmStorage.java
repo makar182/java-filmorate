@@ -11,7 +11,6 @@ import ru.yandex.practicum.filmorate.interfaces.FilmStorage;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
-import ru.yandex.practicum.filmorate.service.MpaService;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -45,7 +44,6 @@ public class dbFilmStorage implements FilmStorage {
 
 
         film.setId(newFilmId);
-        //film.setMpa(mpaService.getMpaById(film.getMpa().getId()));
         return film;
     }
 

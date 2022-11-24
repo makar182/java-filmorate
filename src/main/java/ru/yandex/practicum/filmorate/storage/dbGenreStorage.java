@@ -39,16 +39,6 @@ public class dbGenreStorage {
         }
     }
 
-//    public Film addGenresToFilms(Film film) {
-//        String sql = "SELECT SP_GENRE.ID, SP_GENRE.NAME " +
-//                "FROM FILM_GENRE " +
-//                "JOIN SP_GENRE ON FILM_GENRE.GENRE_ID = SP_GENRE.ID " +
-//                "WHERE FILM_GENRE.FILM_ID = ?";
-//        List<Genre> genres = jdbcTemplate.query(sql, this::makeGenre, film.getId());
-//        film.setGenres(genres);
-//        return film;
-//    }
-
     public void addGenresToFilms(List<Film> films) {
         String inSql = String.join(",", Collections.nCopies(films.size(), "?"));
         final Map<Long, Film> filmById = films.stream().collect(Collectors.toMap(Film::getId, identity()));
@@ -58,7 +48,10 @@ public class dbGenreStorage {
                 "WHERE FILM_GENRE.FILM_ID IN (" + inSql +")";
         jdbcTemplate.query(sqlQuery, (rs) -> {
             final Film film = filmById.get(rs.getLong("FILM_ID"));
-            film.getGenres().add(makeGenre(rs, 0));
+            List<Genre> genres = film.getGenres();
+            Genre genre = makeGenre(rs, 0);
+            genres.remove(genre);
+            genres.add(genre);
         }, films.stream().map(Film::getId).toArray());
     }
 
