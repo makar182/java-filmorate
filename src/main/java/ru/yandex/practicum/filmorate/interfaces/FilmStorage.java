@@ -1,8 +1,10 @@
 package ru.yandex.practicum.filmorate.interfaces;
 
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface FilmStorage {
     Film addFilm(Film film);
@@ -13,9 +15,11 @@ public interface FilmStorage {
 
     List<Film> getFilms();
 
-    Film getFilmById(Long filmId);
+    Optional<Film> getFilmById(Long filmId);
 
     void addLike(Long userId, Long filmId);
 
     void deleteLike(Long userId, Long filmId);
+
+    void batchFilmGenreInsert(Long filmId, List<Genre> genres);
 }

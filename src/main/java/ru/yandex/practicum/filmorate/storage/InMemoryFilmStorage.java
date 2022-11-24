@@ -2,15 +2,15 @@ package ru.yandex.practicum.filmorate.storage;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exceptions.ObjectNotExistException;
 import ru.yandex.practicum.filmorate.interfaces.FilmStorage;
 import ru.yandex.practicum.filmorate.model.Film;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import ru.yandex.practicum.filmorate.model.Genre;
 
-@Component
+import java.util.*;
+
+@Repository("InMemoryFilmStorage")
 @Slf4j
 public class InMemoryFilmStorage implements FilmStorage {
     private final Map<Long, Film> films = new HashMap<>();
@@ -18,28 +18,25 @@ public class InMemoryFilmStorage implements FilmStorage {
 
     @Override
     public Film addFilm(Film film) {
-        film.setId(++id);
+        film.setId(id+1L);
         films.put(film.getId(), film);
-        log.info("Добавлен новый фильм: " + film);
         return film;
     }
 
     @Override
     public Film updateFilm(Film film) {
         films.put(film.getId(), film);
-        log.info("Обновлен фильм: " + film);
         return film;
     }
 
     @Override
     public Film deleteFilm(Film film) {
         films.remove(film.getId());
-        log.info("Удалён фильм: " + film);
         return film;
     }
 
-    public Film getFilmById(Long filmId) {
-        return films.get(filmId);
+    public Optional<Film> getFilmById(Long filmId) {
+        return Optional.ofNullable(films.get(filmId));
     }
 
     @Override
@@ -48,20 +45,28 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     public void addLike(Long userId, Long filmId) {
-        films.get(filmId).addLike(userId);
+        Film film = films.get(filmId);
+        film.getUsersLiked().add(userId);
+        film.setRate(film.getRate()+1);
     }
 
     public void deleteLike(Long userId, Long filmId) {
         Film film = films.get(filmId);
-
         if (film != null) {
             if (film.getUsersLiked().contains(userId)) {
                 film.getUsersLiked().remove(userId);
             } else {
-                throw new ObjectNotExistException("Лайк не найден!");
+                log.info(String.format("Лайк от пользователя с ID =%d фильму с ID =%d не найден!", userId, filmId));
+                throw new ObjectNotExistException(String.format("Лайк от пользователя с ID =%d фильму с ID =%d не найден!", userId, filmId));
             }
         } else {
-            throw new ObjectNotExistException("Фильм не найден!");
+            log.info(String.format("Фильм с ID =%d не найден!", userId));
+            throw new ObjectNotExistException(String.format("Фильм с ID =%d не найден!", userId));
         }
+    }
+
+    @Override
+    public void batchFilmGenreInsert(Long filmId, List<Genre> genres) {
+        
     }
 }

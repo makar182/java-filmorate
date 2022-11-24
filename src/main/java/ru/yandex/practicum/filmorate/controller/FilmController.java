@@ -1,13 +1,16 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.interfaces.Marker;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
 import javax.validation.Valid;
 import java.util.*;
 
+@Validated
 @RestController
 @RequestMapping("/films")
 public class FilmController {
@@ -18,11 +21,13 @@ public class FilmController {
         this.filmService = filmService;
     }
 
+    @Validated({Marker.OnCreate.class})
     @PostMapping
     public Film addFilm(@Valid @RequestBody Film film) {
         return filmService.addFilm(film);
     }
 
+    @Validated({Marker.OnUpdate.class})
     @PutMapping
     public Film updateFilm(@Valid @RequestBody Film film) {
         return filmService.updateFilm(film);

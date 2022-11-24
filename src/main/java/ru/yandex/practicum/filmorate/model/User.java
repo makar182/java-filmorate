@@ -1,35 +1,39 @@
 package ru.yandex.practicum.filmorate.model;
 
-import lombok.Data;
-
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+import net.minidev.json.annotate.JsonIgnore;
+import ru.yandex.practicum.filmorate.interfaces.Marker;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Null;
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
-@Data
+@Builder
+@Getter
+@Setter
 public class User {
+    @Null(groups = Marker.OnCreate.class)
+    @NotNull(groups = Marker.OnUpdate.class)
     private Long id;
+
     @Email
     private String email;
+
+    private String name;
+
     @NotNull
     @NotBlank
     private String login;
-    private String name;
+
     @NotNull
     private LocalDate birthday;
-    private Set<Long> friends = new HashSet<>();
 
-    public void addFriend(Long friendId) {
-        friends.add(friendId);
-    }
-
-    public void deleteFriend(Long friendId) {
-        friends.remove(friendId);
-    }
+    @JsonIgnore
+    private List<Long> friends;
 
     @Override
     public boolean equals(Object o) {

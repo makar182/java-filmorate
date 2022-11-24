@@ -1,43 +1,58 @@
 package ru.yandex.practicum.filmorate.model;
 
-import lombok.Data;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+import net.minidev.json.annotate.JsonIgnore;
+import ru.yandex.practicum.filmorate.interfaces.Marker;
+
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Null;
 import java.time.LocalDate;
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
-@Data
+@Builder
+@Getter
+@Setter
 public class Film {
-    @NotNull
-    private long id;
+    @Null(groups = Marker.OnCreate.class)
+    @NotNull(groups = Marker.OnUpdate.class)
+    private Long id;
+
     @NotNull
     @NotBlank
     private String name;
+
     @NotNull
     @NotBlank
     private String description;
+
     @NotNull
     private LocalDate releaseDate;
+
     @NotNull
-    private int duration;
-    private Set<Long> usersLiked = new HashSet<>();
+    private Integer duration;
 
-    public void addLike(Long userId) {
-        usersLiked.add(userId);
-    }
+    private Long rate;
 
-    public void deleteLike(Long userId) {
-        usersLiked.remove(userId);
-    }
+    @NotNull
+    private Mpa mpa;
+
+    @JsonIgnore
+    private List<Long> usersLiked;
+
+    @Builder.Default
+    private List<Genre> genres = new ArrayList<>();
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Film film = (Film) o;
-        return id == film.id;
+        return Objects.equals(id, film.id);
     }
 
     @Override
